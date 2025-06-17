@@ -920,6 +920,28 @@
             font-size: 20px;
             color: var(--primary);
         }
+        
+        /* 图例样式优化 */
+        .legend-content {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .legend-section {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+        
+        .legend-section-title {
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border);
+        }
     </style>
 </head>
 <body>
@@ -1714,45 +1736,44 @@ MEGGENLVRVSSARLSGSNVWRNSAMDVFSRSSSREDYDDEEALRWAALEKLPTYSRIRRGLLLEEEGQSREVDITKLDL
                 
                 // 添加图例（如果用户选择包含图例）
                 if (markers.length > 0 && includeLegend.checked) {
-                    yPos += 30; // 添加一些垂直间距
-                    let xLegend = 20;
-                    let currentRowY = yPos; // 当前行的Y坐标
-                    const legendItemWidth = 250; // 每个图例项的宽度
-                    const legendItemHeight = 40; // 每个图例项的高度
-                    const horizontalSpacing = 20; // 图例项之间的水平间距
-                    const maxWidth = width - 40; // 最大宽度
+                    // 增加图例与序列的间距
+                    yPos += 50; 
                     
                     // 添加图例标题
-                    svgContent += `<text x="20" y="${yPos}" font-family="Arial" font-size="20" font-weight="bold">图例</text>\n`;
-                    yPos += 30;
-                    currentRowY = yPos;
+                    svgContent += `<text x="20" y="${yPos}" font-family="Arial" font-size="24" font-weight="bold">图例</text>\n`;
+                    
+                    // 设置图例项位置
+                    let xLegend = 20;
+                    const legendStartY = yPos + 40;  // 增加标题与图例项的间距
+                    let currentLegendY = legendStartY;
+                    const legendItemWidth = 250;
+                    const legendItemHeight = 60;  // 增加图例项高度
+                    const horizontalSpacing = 20;
+                    const verticalSpacing = 30;  // 增加垂直间距
                     
                     // 绘制图例项
                     markers.forEach((marker, index) => {
                         // 检查当前行是否还能放下一个图例项
-                        if (xLegend + legendItemWidth > maxWidth) {
-                            // 换行
+                        if (xLegend + legendItemWidth > width - 40) {
                             xLegend = 20;
-                            currentRowY += legendItemHeight + 20; // 增加行高和间距
+                            currentLegendY += legendItemHeight + verticalSpacing;
                         }
                         
                         // 绘制颜色方块
-                        svgContent += `<rect x="${xLegend}" y="${currentRowY - 15}" width="20" height="20" fill="${marker.color}" />\n`;
+                        svgContent += `<rect x="${xLegend}" y="${currentLegendY - 15}" width="20" height="20" fill="${marker.color}" />\n`;
                         
                         // 绘制图例文本
-                        const textContent = `${marker.name} (${marker.start}-${marker.end})`;
-                        svgContent += `<text x="${xLegend + 30}" y="${currentRowY}" font-family="Arial" font-size="16">${textContent}</text>\n`;
+                        svgContent += `<text x="${xLegend + 30}" y="${currentLegendY}" font-family="Arial" font-size="18">${marker.name} (${marker.start}-${marker.end})</text>\n`;
                         
-                        // 绘制标记类型
-                        const typeText = marker.type === 'background' ? '背景标记' : '字符标记';
-                        svgContent += `<text x="${xLegend + 30}" y="${currentRowY + 20}" font-family="Arial" font-size="14" fill="#666">${typeText}</text>\n`;
+                        // 绘制标记类型 - 下移文本位置
+                        svgContent += `<text x="${xLegend + 30}" y="${currentLegendY + 25}" font-family="Arial" font-size="16" fill="#666">${marker.type === 'background' ? '背景标记' : '字符标记'}</text>\n`;
                         
                         // 更新下一个图例项的X坐标
                         xLegend += legendItemWidth + horizontalSpacing;
                     });
                     
                     // 更新总高度为最后一行图例的底部位置
-                    height = currentRowY + legendItemHeight + 50;
+                    height = currentLegendY + legendItemHeight + 50;
                 }
                 
                 // 更新SVG高度
@@ -1768,7 +1789,7 @@ MEGGENLVRVSSARLSGSNVWRNSAMDVFSRSSSREDYDDEEALRWAALEKLPTYSRIRRGLLLEEEGQSREVDITKLDL
                 link.click();
             }
             
-            // 使用Canvas绘制图片
+            // 使用Canvas绘制图片 - 修复图例重叠问题
             function downloadAsImage(format) {
                 if (!formattedSequenceData) return;
                 
@@ -1852,7 +1873,7 @@ MEGGENLVRVSSARLSGSNVWRNSAMDVFSRSSSREDYDDEEALRWAALEKLPTYSRIRRGLLLEEEGQSREVDITKLDL
                             if (markers.length > 0 && includeLegend.checked && currentPage === totalPages - 1) {
                                 // 计算图例所需高度（每行40px，每行显示4个图例）
                                 const rows = Math.ceil(markers.length / 4);
-                                legendHeight = 80 + rows * 60;
+                                legendHeight = 120 * resolution + rows * 80 * resolution; // 增加垂直间距
                             }
                             
                             canvas.width = logicalWidth * dpr;
@@ -1926,40 +1947,50 @@ MEGGENLVRVSSARLSGSNVWRNSAMDVFSRSSSREDYDDEEALRWAALEKLPTYSRIRRGLLLEEEGQSREVDITKLDL
                             
                             // 如果是最后一页，添加图例
                             if (currentPage === totalPages - 1 && markers.length > 0 && includeLegend.checked) {
-                                // 添加图例标题
+                                // 添加图例标题 - 增加垂直间距
+                                const titleY = yPos + 60 * resolution;  // 增加标题与序列的间距
                                 ctx.font = `bold ${20 * resolution}px Arial`;
                                 ctx.fillStyle = '#333';
-                                ctx.fillText('图例', padding, yPos + 40);
+                                ctx.fillText('图例', padding, titleY);
                                 
-                                // 设置图例位置
+                                // 设置图例位置 - 增加起始位置
                                 let xLegend = padding;
-                                const legendStartY = yPos + 70; // 图例起始Y坐标
+                                const legendStartY = titleY + 40 * resolution;  // 增加标题与图例项的间距
                                 let currentLegendY = legendStartY;
-                                const legendItemWidth = 250 * resolution; // 每个图例项的宽度
-                                const legendItemHeight = 40 * resolution; // 每个图例项的高度
-                                const horizontalSpacing = 20 * resolution; // 图例项之间的水平间距
+                                const legendItemWidth = 250 * resolution;
+                                const legendItemHeight = 60 * resolution;  // 增加图例项高度
+                                const horizontalSpacing = 20 * resolution;
+                                const verticalSpacing = 30 * resolution;  // 增加垂直间距
                                 
-                                // 绘制图例项
+                                // 绘制图例项 - 调整文本位置
                                 ctx.font = `${16 * resolution}px Arial`;
                                 markers.forEach((marker, index) => {
                                     // 检查当前行是否还能放下一个图例项
                                     if (xLegend + legendItemWidth > logicalWidth - padding) {
                                         xLegend = padding;
-                                        currentLegendY += legendItemHeight + 20; // 换行，增加行高和间距
+                                        currentLegendY += legendItemHeight + verticalSpacing;
                                     }
                                     
                                     // 绘制颜色方块
                                     ctx.fillStyle = marker.color;
-                                    ctx.fillRect(xLegend, currentLegendY - 12 * resolution, 20 * resolution, 20 * resolution);
+                                    ctx.fillRect(xLegend, currentLegendY - 15 * resolution, 20 * resolution, 20 * resolution);
                                     
-                                    // 绘制图例文本
+                                    // 绘制图例文本 - 增加行间距
                                     ctx.fillStyle = '#333';
-                                    ctx.fillText(`${marker.name} (${marker.start}-${marker.end})`, xLegend + 30 * resolution, currentLegendY);
+                                    ctx.fillText(
+                                        `${marker.name} (${marker.start}-${marker.end})`, 
+                                        xLegend + 30 * resolution, 
+                                        currentLegendY
+                                    );
                                     
-                                    // 绘制标记类型
+                                    // 绘制标记类型 - 下移文本位置
                                     ctx.fillStyle = '#666';
                                     ctx.font = `${14 * resolution}px Arial`;
-                                    ctx.fillText(marker.type === 'background' ? '背景标记' : '字符标记', xLegend + 30 * resolution, currentLegendY + 20 * resolution);
+                                    ctx.fillText(
+                                        marker.type === 'background' ? '背景标记' : '字符标记', 
+                                        xLegend + 30 * resolution, 
+                                        currentLegendY + 25 * resolution  // 增加文本行间距
+                                    );
                                     
                                     // 重置字体
                                     ctx.font = `${16 * resolution}px Arial`;
